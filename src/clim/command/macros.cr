@@ -32,6 +32,13 @@ class Clim
         end
       end
 
+      macro help(short = nil)
+        {% raise "The 'help' directive requires the 'short' argument. (ex 'help short: \"-h\"'" if short == nil %}
+        macro help_macro
+          option {{short.id.stringify}}, "--help", type: Bool, desc: "Show this help.", default: false
+        end
+      end
+
       macro help_template(&block)
         {% raise "Can not be declared 'help_template' as sub command." unless @type == Command_Main_command_of_clim_library %}
 
@@ -84,14 +91,14 @@ class Clim
 
       macro run(&block)
         def run(io : IO)
-          return RunProc.new { io.puts help_template }.call(@parser.options, @parser.arguments) if @parser.options.help == true
-
           options = @parser.options
+          return RunProc.new { io.puts help_template }.call(options, @parser.arguments, io) if options.help == true
+          
           if options.responds_to?(:version)
-            return RunProc.new { io.puts version_str }.call(options, @parser.arguments) if options.version == true
+            return RunProc.new { io.puts version_str }.call(options, @parser.arguments, io) if options.version == true
           end
 
-          RunProc.new {{ block.id }} .call(@parser.options, @parser.arguments)
+          RunProc.new {{ block.id }} .call(options, @parser.arguments, io)
         end
       end
 
@@ -145,7 +152,7 @@ class Clim
           end
 
           alias OptionsForEachCommand = Options_{{ name.id.capitalize }}
-          alias RunProc = Proc(OptionsForEachCommand, Array(String), Nil)
+          alias RunProc = Proc(OptionsForEachCommand, Array(String), IO, Nil)
 
           property parser : Parser(OptionsForEachCommand)
           property name : String = {{name.id.stringify}}
@@ -161,9 +168,13 @@ class Clim
             self.new(Parser(OptionsForEachCommand).new(OptionsForEachCommand.new))
           end
 
+          macro help_macro
+            option "--help", type: Bool, desc: "Show this help.", default: false
+          end
+
           {{ yield }}
 
-          option "--help", type: Bool, desc: "Show this help.", default: false
+          help_macro
 
         end
       end

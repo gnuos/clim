@@ -54,7 +54,7 @@ Add this to your application's `shard.yml`:
 dependencies:
   clim:
     github: at-grandpa/clim
-    version: 0.5.0
+    version: 0.10.0
 ```
 
 ## Minimum sample
@@ -338,18 +338,66 @@ $ ./mycli -v
 mycli version: 1.0.1
 ```
 
+#### Short option for help
+
+The short help option is not set by default. If you want help to appear by specifying `-h` , specify `help short: "-h"` .
+
+(However, it should not conflict with other options.)
+
+```crystal
+class MyCli < Clim
+  main do
+    desc "help directive test."
+    usage "mycli [options] [arguments]"
+    help short: "-h"
+    run do |opts, args|
+      # ...
+    end
+  end
+end
+```
+
+```console
+$ ./mycli -h
+
+  help directive test.
+
+  Usage:
+
+    mycli [options] [arguments]
+
+  Options:
+
+    -h, --help                       Show this help.
+
+$ ./mycli --help
+
+  help directive test.
+
+  Usage:
+
+    mycli [options] [arguments]
+
+  Options:
+
+    -h, --help                       Show this help.
+
+```
+
+In addition to `-h`, you can specify any single character. For example, `help short: "-a"` .
+
 #### option
 
 You can specify multiple options for the command.
 
- Argument | Description | Example | Required | Default
----------|----------|---------|------|------
- First argument | short or long name | `-t TIMES`, `--times TIMES` | true | -
- Second argument | long name | `--times TIMES` | false | -
- `type` | option type | `type: Array(Float32)` | false | `String`
- `desc` | option description | `desc: "option description."` | false | `"Option description."`
- `default` | default value | `default: [1.1_f32, 2.2_f32]` | false | `nil`
- `required` | required flag | `required: true` | false | `false`
+ | Argument        | Description        | Example                       | Required | Default                 |
+ | --------------- | ------------------ | ----------------------------- | -------- | ----------------------- |
+ | First argument  | short or long name | `-t TIMES`, `--times TIMES`   | true     | -                       |
+ | Second argument | long name          | `--times TIMES`               | false    | -                       |
+ | `type`          | option type        | `type: Array(Float32)`        | false    | `String`                |
+ | `desc`          | option description | `desc: "option description."` | false    | `"Option description."` |
+ | `default`       | default value      | `default: [1.1_f32, 2.2_f32]` | false    | `nil`                   |
+ | `required`      | required flag      | `required: true`              | false    | `false`                 |
 
 ```crystal
 class MyCli < Clim
@@ -370,39 +418,39 @@ The type of the option is determined by the `default` and `required` patterns.
 
 For example `Int8`.
 
- `default` | `required` | Type
----------|----------|---------
- exist | `true` | `Int8` (default: Your specified value.) |
- exist | `false` | `Int8` (default: Your specified value.) |
- not exist | `true` | `Int8` |
- not exist | `false` | `Int8 \| Nil` |
+ | `default` | `required` | Type                                    |
+ | --------- | ---------- | --------------------------------------- |
+ | exist     | `true`     | `Int8` (default: Your specified value.) |
+ | exist     | `false`    | `Int8` (default: Your specified value.) |
+ | not exist | `true`     | `Int8`                                  |
+ | not exist | `false`    | `Int8 \| Nil`                           |
 
 *String*
 
- `default` | `required` | Type
----------|----------|---------
- exist | `true` | `String` (default: Your specified value.) |
- exist | `false` | `String` (default: Your specified value.) |
- not exist | `true` | `String` |
- not exist | `false` | `String \| Nil` |
+ | `default` | `required` | Type                                      |
+ | --------- | ---------- | ----------------------------------------- |
+ | exist     | `true`     | `String` (default: Your specified value.) |
+ | exist     | `false`    | `String` (default: Your specified value.) |
+ | not exist | `true`     | `String`                                  |
+ | not exist | `false`    | `String \| Nil`                           |
 
 *Bool*
 
- `default` | `required` | Type
----------|----------|---------
- exist | `true` | `Bool` (default: Your specified value.) |
- exist | `false` | `Bool` (default: Your specified value.) |
- not exist | `true` | `Bool` |
- not exist | `false` | `Bool` (default: `false`) |
+ | `default` | `required` | Type                                    |
+ | --------- | ---------- | --------------------------------------- |
+ | exist     | `true`     | `Bool` (default: Your specified value.) |
+ | exist     | `false`    | `Bool` (default: Your specified value.) |
+ | not exist | `true`     | `Bool`                                  |
+ | not exist | `false`    | `Bool` (default: `false`)               |
 
 *Array*
 
- `default` | `required` | Type
----------|----------|---------
- exist | `true` | `Array(T)` (default: Your specified value.) |
- exist | `false` | `Array(T)` (default: Your specified value.) |
- not exist | `true` | `Array(T)` |
- not exist | `false` | `Array(T)` (default: `[] of T`) |
+ | `default` | `required` | Type                                        |
+ | --------- | ---------- | ------------------------------------------- |
+ | exist     | `true`     | `Array(T)` (default: Your specified value.) |
+ | exist     | `false`    | `Array(T)` (default: Your specified value.) |
+ | not exist | `true`     | `Array(T)`                                  |
+ | not exist | `false`    | `Array(T)` (default: `[] of T`)             |
 
 For Bool, you do not need to specify arguments for short or long.
 
@@ -594,6 +642,24 @@ class MyCli < Clim
     end
   end
 end
+```
+
+### `io` in run block
+
+You can receive `io` in a run block by passing it as the second argument to the start method.
+
+```crystal
+class IoCommand < Clim
+  main do
+    run do |opts, args, io|
+      io.puts "in main_command"
+    end
+  end
+end
+
+io = IO::Memory.new
+IoCommand.start([] of String, io: io)
+io.to_s # => "in main_command\n"
 ```
 
 ## Development
